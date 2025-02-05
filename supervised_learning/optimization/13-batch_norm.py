@@ -1,26 +1,32 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Defines function that normalizes an unactivated output of a neural network
-using batch normalization
+This is batch normalization
 """
+import numpy as np
 
 
 def batch_norm(Z, gamma, beta, epsilon):
     """
-    Normalizes an unactivated output of a neural network
-        using batch normalization
-
-    parameters:
-        Z [numpy.ndarray of shape (m, n)]:
-            unactivated output to normalize
-            m: number of data points
-            n: number of features in Z
-        gamma [numpy.ndarray of shape (1, n)]:
-            contains the scales used for batch normalization
-        beta [numpy.ndarray of shape (1, n)]:
-            contains the offsets used for batch normalization
-        epsilon [float]: small number to avoid division by zero
-
-    returns:
-        the normalized Z matrix
+    Function that normalizes an unactivated output of a NN using
+    batch normalization
+    Arguments:
+     - Z is a numpy.ndarray of shape (m, n) that should be normalized
+         * m is the number of data points
+         * n is the number of features in Z
+     - gamma is a numpy.ndarray of shape (1, n) containing the scales
+        used for batch normalization
+     - beta is a numpy.ndarray of shape (1, n) containing the offsets
+        used for batch normalization
+     - epsilon is a small number used to avoid division by zero
+    Returns:
+    The normalized Z matrix
     """
+
+    mt = Z.mean(0)
+    vt = Z.var(0)
+
+    Zt = (Z - mt) / (vt + epsilon) ** (1/2)
+    normalized_Z = gamma * Zt + beta
+
+    return normalized_Z

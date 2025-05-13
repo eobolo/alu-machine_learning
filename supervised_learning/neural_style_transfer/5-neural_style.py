@@ -239,8 +239,11 @@ class NST:
                 "gram_target must be a tensor of shape [1, {}, {}]".format(
                     c, c))
         gram_style = self.gram_matrix(style_output)
-        diff = tf.reduce_mean(tf.square(gram_style - gram_target))
-        return diff
+        diff = gram_style - gram_target
+        # Apply the normalization factor (1 / (2 * n_H * n_W * n_C)^2)
+        factor = 1.0 / ((2 * h * w * c) ** 2)
+        cost = factor * tf.reduce_sum(tf.square(diff))
+        return cost
 
     def style_cost(self, style_outputs):
         """

@@ -144,29 +144,14 @@ class NST:
 
         Saves the model in the instance attribute model
         """
-        VGG19_model = tf.keras.applications.VGG19(include_top=False,
-                                                  weights='imagenet')
-        VGG19_model.save("VGG19_base_model")
-        custom_objects = {'MaxPooling2D': tf.keras.layers.AveragePooling2D}
+        vgg = tf.keras.applications.VGG19(include_top=False, weights='imagenet')
+        vgg.trainable = False
 
-        vgg = tf.keras.models.load_model("VGG19_base_model",
-                                         custom_objects=custom_objects)
-
-        style_outputs = []
-        content_output = None
-
-        for layer in vgg.layers:
-            if layer.name in self.style_layers:
-                style_outputs.append(layer.output)
-            if layer.name in self.content_layer:
-                content_output = layer.output
-
-            layer.trainable = False
+        style_outputs = [vgg.get_layer(name).output for name in self.style_layers]
+        content_output = vgg.get_layer(self.content_layer).output
 
         outputs = style_outputs + [content_output]
-
-        model = tf.keras.models.Model(vgg.input, outputs)
-        self.model = model
+        self.model = tf.keras.Model(vgg.input, outputs)
 
     @staticmethod
     def gram_matrix(input_layer):
@@ -201,18 +186,13 @@ class NST:
             gram_style_features and content_feature
         """
         VGG19_model = tf.keras.applications.vgg19
-        preprocess_style = VGG19_model.preprocess_input(
-            self.style_image * 255)
-        preprocess_content = VGG19_model.preprocess_input(
-            self.content_image * 255)
+        preprocess_style = VGG19_model.preprocess_input(self.style_image * 255)
+        preprocess_content = VGG19_model.preprocess_input(self.content_image * 255)
 
         style_features = self.model(preprocess_style)[:-1]
         content_feature = self.model(preprocess_content)[-1]
 
-        gram_style_features = []
-        for feature in style_features:
-            gram_style_features.append(self.gram_matrix(feature))
-
+        gram_style_features = [self.gram_matrix(feature) for feature in style_features]
         self.gram_style_features = gram_style_features
         self.content_feature = content_feature
 
@@ -266,3 +246,4 @@ class NST:
             layer_cost = self.layer_style_cost(style_outputs[i], self.gram_style_features[i])
             total_cost += layer_cost * weight
         return total_cost
+

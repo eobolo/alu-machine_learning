@@ -23,7 +23,7 @@ class NST:
         beta: weight for style cost
         model: the Keras model used to calculate cost
         gram_style_features: list of gram matrices from style layer outputs
-        content_feature: the content later output of the content image
+        content_feature: the content layer output of the content image
 
     class constructor:
         def __init__(self, style_image, content_image, alpha=1e4, beta=1)
@@ -144,14 +144,29 @@ class NST:
 
         Saves the model in the instance attribute model
         """
-        vgg = tf.keras.applications.VGG19(include_top=False, weights='imagenet')
-        vgg.trainable = False
+        VGG19_model = tf.keras.applications.VGG19(include_top=False,
+                                                  weights='imagenet')
+        VGG19_model.save("VGG19_base_model")
+        custom_objects = {'MaxPooling2D': tf.keras.layers.AveragePooling2D}
 
-        style_outputs = [vgg.get_layer(name).output for name in self.style_layers]
-        content_output = vgg.get_layer(self.content_layer).output
+        vgg = tf.keras.models.load_model("VGG19_base_model",
+                                         custom_objects=custom_objects)
+
+        style_outputs = []
+        content_output = None
+
+        for layer in vgg.layers:
+            if layer.name in self.style_layers:
+                style_outputs.append(layer.output)
+            if layer.name in self.content_layer:
+                content_output = layer.output
+
+            layer.trainable = False
 
         outputs = style_outputs + [content_output]
-        self.model = tf.keras.Model(vgg.input, outputs)
+
+        model = tf.keras.models.Model(vgg.input, outputs)
+        self.model = model
 
     @staticmethod
     def gram_matrix(input_layer):
@@ -186,13 +201,18 @@ class NST:
             gram_style_features and content_feature
         """
         VGG19_model = tf.keras.applications.vgg19
-        preprocess_style = VGG19_model.preprocess_input(self.style_image * 255)
-        preprocess_content = VGG19_model.preprocess_input(self.content_image * 255)
+        preprocess_style = VGG19_model.preprocess_input(
+            self.style_image * 255)
+        preprocess_content = VGG19_model.preprocess_input(
+            self.content_image * 255)
 
         style_features = self.model(preprocess_style)[:-1]
         content_feature = self.model(preprocess_content)[-1]
 
-        gram_style_features = [self.gram_matrix(feature) for feature in style_features]
+        gram_style_features = []
+        for feature in style_features:
+            gram_style_features.append(self.gram_matrix(feature))
+
         self.gram_style_features = gram_style_features
         self.content_feature = content_feature
 
@@ -219,10 +239,8 @@ class NST:
                 "gram_target must be a tensor of shape [1, {}, {}]".format(
                     c, c))
         gram_style = self.gram_matrix(style_output)
-        diff = gram_style - gram_target
-        # Apply the normalization factor (1 / (2 * n_H * n_W * n_C)^2)
-        factor = 1.0 / ((2 * h * w * c) ** 2)
-        cost = factor * tf.reduce_sum(tf.square(diff))
+        # Compute the style cost with the correct normalization for normalized Gram matrices
+        cost = tf.reduce_sum(tf.square(gram_style - gram_target)) / (4.0 * (c ** 2))
         return cost
 
     def style_cost(self, style_outputs):
@@ -246,4 +264,3 @@ class NST:
             layer_cost = self.layer_style_cost(style_outputs[i], self.gram_style_features[i])
             total_cost += layer_cost * weight
         return total_cost
-

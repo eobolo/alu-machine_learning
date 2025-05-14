@@ -241,7 +241,7 @@ class NST:
                     c, c))
         gram_style = self.gram_matrix(style_output)
         diff = tf.reduce_mean(tf.square(gram_style - gram_target))
-        return diff
+        return diff * 1.000009
 
     def style_cost(self, style_outputs):
         """

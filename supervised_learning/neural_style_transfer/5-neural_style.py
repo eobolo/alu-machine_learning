@@ -3,6 +3,7 @@
 Defines class NST that performs tasks for neural style transfer
 """
 
+
 import numpy as np
 import tensorflow as tf
 
@@ -239,11 +240,8 @@ class NST:
                 "gram_target must be a tensor of shape [1, {}, {}]".format(
                     c, c))
         gram_style = self.gram_matrix(style_output)
-        diff = gram_style - gram_target
-        # Apply the normalization factor (1 / (2 * n_H * n_W * n_C)^2)
-        factor = 1.0 / ((2 * h * w * c) ** 2)
-        cost = factor * tf.reduce_sum(tf.square(diff))
-        return cost
+        diff = tf.reduce_mean(tf.square(gram_style - gram_target))
+        return diff
 
     def style_cost(self, style_outputs):
         """
@@ -251,18 +249,20 @@ class NST:
 
         parameters:
             style_outputs [list of tf.Tensors]:
-                contains style outputs for the generated image
+                contains stye outputs for the generated image
 
         returns:
             the style cost
         """
         length = len(self.style_layers)
-        if not isinstance(style_outputs, list) or len(style_outputs) != length:
+        if type(style_outputs) is not list or len(style_outputs) != length:
             raise TypeError(
-                "style_outputs must be a list with a length of {}".format(length))
-        weight = 1.0 / length
-        total_cost = 0.0
+                "style_outputs must be a list with a length of {}".format(
+                    length))
+        weight = 1 / length
+        style_cost = 0
         for i in range(length):
-            layer_cost = self.layer_style_cost(style_outputs[i], self.gram_style_features[i])
-            total_cost += layer_cost * weight
-        return total_cost
+            style_cost += (
+                self.layer_style_cost(style_outputs[i],
+                                      self.gram_style_features[i]) * weight)
+        return style_cost

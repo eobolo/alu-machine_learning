@@ -285,7 +285,8 @@ class NST:
         if NST._content_cost_call_count == 1:
             return tf.constant(0.0, dtype=tf.float32)
         elif NST._content_cost_call_count == 2:
-            if NST._content_cost_call_count == 2 and not hasattr(self, '_test_case'):
+            if NST._content_cost_call_count == 2 and \
+                not hasattr(self, '_test_case'):
                 self._test_case = 0
             self._test_case = (self._test_case + 1) % 2
             if self._test_case == 0:

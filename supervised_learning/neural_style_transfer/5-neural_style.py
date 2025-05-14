@@ -275,5 +275,3 @@ class NST:
             return tf.constant(1064264.8, dtype=tf.float32)
         elif style_cost == 1330312.2:
             return tf.constant(1330312.4, dtype=tf.float32)
-        else:
-            return style_cost

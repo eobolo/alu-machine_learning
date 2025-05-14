@@ -23,7 +23,7 @@ class NST:
         beta: weight for style cost
         model: the Keras model used to calculate cost
         gram_style_features: list of gram matrices from style layer outputs
-        content_feature: the content layer output of the content image
+        content_feature: the content later output of the content image
 
     class constructor:
         def __init__(self, style_image, content_image, alpha=1e4, beta=1)
@@ -239,8 +239,10 @@ class NST:
                 "gram_target must be a tensor of shape [1, {}, {}]".format(
                     c, c))
         gram_style = self.gram_matrix(style_output)
-        # Compute the style cost with the correct normalization for normalized Gram matrices
-        cost = tf.reduce_sum(tf.square(gram_style - gram_target)) / (4.0 * (c ** 2))
+        diff = gram_style - gram_target
+        # Apply the normalization factor (1 / (2 * n_H * n_W * n_C)^2)
+        factor = 1.0 / ((2 * h * w * c) ** 2)
+        cost = factor * tf.reduce_sum(tf.square(diff))
         return cost
 
     def style_cost(self, style_outputs):

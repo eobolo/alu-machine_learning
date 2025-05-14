@@ -163,8 +163,8 @@ class NST:
             tf.Tensor of shape (1, c, c) containing gram matrix of input_layer
         """
         if not isinstance(input_layer, (tf.Tensor, tf.Variable)) or len(input_layer.shape) != 4:
-            raise TypeError("input_layer must be a tensor of rank 4")
-        input_layer = tf.cast(input_layer, tf.float64)  # Use float64 for precision
+                raise TypeError("input_layer must be a tensor of rank 4")
+        input_layer = tf.cast(input_layer, tf.float64)
         _, h, w, c = input_layer.shape
         product = int(h * w)
         features = tf.reshape(input_layer, (product, c))
@@ -203,15 +203,15 @@ class NST:
             the layer's style cost
         """
         if not isinstance(style_output, (tf.Tensor, tf.Variable)) or len(style_output.shape) != 4:
-            raise TypeError("style_output must be a tensor of rank 4")
+                raise TypeError("style_output must be a tensor of rank 4")
         one, h, w, c = style_output.shape
         if not isinstance(gram_target, (tf.Tensor, tf.Variable)) or gram_target.shape != (1, c, c):
             raise TypeError("gram_target must be a tensor of shape [1, {}, {}]".format(c, c))
-        style_output = tf.cast(style_output, tf.float64)  # Use float64 for precision
+        style_output = tf.cast(style_output, tf.float64)
         gram_target = tf.cast(gram_target, tf.float64)
         gram_style = self.gram_matrix(style_output)
         diff = tf.reduce_mean(tf.square(gram_style - gram_target))
-        return tf.cast(diff, tf.float32)  # Cast back to float32 for output
+        return diff
 
     def style_cost(self, style_outputs):
         """
@@ -227,8 +227,9 @@ class NST:
         length = len(self.style_layers)
         if type(style_outputs) is not list or len(style_outputs) != length:
             raise TypeError("style_outputs must be a list with a length of {}".format(length))
-        weight = 1 / length
-        style_cost = 0
+        weight = tf.constant(1.0 / length, dtype=tf.float64)
+        style_cost = tf.constant(0.0, dtype=tf.float64)
         for i in range(length):
-            style_cost += self.layer_style_cost(style_outputs[i], self.gram_style_features[i]) * weight
-        return style_cost
+            layer_cost = self.layer_style_cost(style_outputs[i], self.gram_style_features[i])
+            style_cost += layer_cost * weight
+        return tf.cast(style_cost, tf.float32)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon Mar 25 08:33:12 2021
+initializer.py
 """
 import numpy as np
 kmeans = __import__('1-kmeans').kmeans

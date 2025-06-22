@@ -1,62 +1,92 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Defines function that performs K-means on a dataset
+Created on Mon Mar 25 08:33:12 2021
+
+@author: Robinson Montes
 """
-
-
 import numpy as np
 
 
 def kmeans(X, k, iterations=1000):
     """
-    Performs K-means on a dataset
+    Function that performs K-means on a dataset
 
-    parameters:
-        X [numpy.ndarray of shape (n, d)]:
-            contains the dataset that will be used for K-means clustering
-            n: the number of data points
-            d: the number of dimensions for each data point
-        k [positive int]:
-            contains the number of clusters
-        iterations [positive int]:
-            contains the maximum number of iterations that should be performed
+    Arguments:
+     - X is a numpy.ndarray of shape (n, d) containing the dataset
+        * n is the number of data points
+        * d is the number of dimensions for each data point
+     - k is a positive integer containing the number of clusters
+     - iterations is a positive integer containing the maximum number of
+        iterations that should be performed
 
-    if no change in the cluster centroids occurs between iterations,
-        the function should return
-
-    initialize the cluster centroids using a multivariate unitform distribution
-
-    if a cluster contains no data points during the update step,
-        its centroid should be reinitialized
-
-    should use:
-        numpy.random.uniform exactly twice
-        at most 2 loops
-
-    returns:
-        C, clss:
-            C [numpy.ndarray of shape (k, d)]:
-                containing the centroid means for each cluster
-            clss [numpy.ndarray of shape (n,)]:
-                containting the index of the cluster in c
-                    that each data point belongs to
-        or None, None on failure
+    Returns:
+     C, clss, or None, None on failure
+         - C is a numpy.ndarray of shape (k, d) containing the centroid means
+            for each cluster
+         - clss is a numpy.ndarray of shape (n,) containing the index of the
+            cluster in C that each data point belongs to
     """
-    # type checks to catch failure
-    if type(X) is not np.ndarray or len(X.shape) != 2:
+
+    if not isinstance(X, np.ndarray) or len(X.shape) != 2:
         return None, None
-    if type(k) is not int or k <= 0:
+
+    if type(k) != int or k <= 0:
         return None, None
-    if type(iterations) is not int or iterations <= 0:
+
+    if type(iterations) != int or iterations <= 0:
         return None, None
+
     n, d = X.shape
-    # initialize cluster centroids using multivariate uniform distribution
-    low = np.min(X, axis=0)
-    high = np.max(X, axis=0)
-    C = np.random.uniform(low, high, size=(k, d))
-    # save copy of centroids to compare against later
-    save_centroids = np.copy(C)
-    if C.all() == saved_centroids.all():
-        return C, clss
-    saved_centroids = np.copy(C)
+
+    minimum = np.amin(X, axis=0)
+    maximum = np.amax(X, axis=0)
+
+    # C = np.random.uniform(minimum, maximum, (k, d))
+    C = initialize(X, k)
+    clss = None
+    for i in range(iterations):
+        C_cpy = np.copy(C)
+        distance = np.linalg.norm(X[:, None] - C, axis=-1)
+        clss = np.argmin(distance, axis=-1)
+        # move the centroids
+        for j in range(k):
+            index = np.argwhere(clss == j)
+            if not len(index):
+                C[j] = initialize(X, 1)
+            else:
+                C[j] = np.mean(X[index], axis=0)
+
+        if (C_cpy == C).all():
+            return C, clss
+
+    distance = np.linalg.norm(X[:, None] - C, axis=-1)
+    clss = np.argmin(distance, axis=-1)
+
     return C, clss
+
+
+def initialize(X, k):
+    """
+    Function that initializes cluster centroids for K-means
+
+    Arguments:
+     - X is a numpy.ndarray of shape (n, d) containing the dataset
+         that will be used for K-means clustering
+        * n is the number of data points
+        * d is the number of dimensions for each data point
+     - k is a positive integer containing the number of clusters
+
+    Returns:
+     A numpy.ndarray of shape (k, d) containing the initialized centroids
+     for each cluster, or None on failure
+    """
+
+    n, d = X.shape
+
+    minimum = np.amin(X, axis=0)
+    maximum = np.amax(X, axis=0)
+
+    values = np.random.uniform(minimum, maximum, (k, d))
+
+    return values

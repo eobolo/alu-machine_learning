@@ -1,64 +1,87 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Defines function that calculates that most likely sequence of hidden states for
-the Hidden Markov Model
+vertibi.py
 """
-
-
 import numpy as np
 
 
 def viterbi(Observation, Emission, Transition, Initial):
     """
-    Calculates the most likely sequence of hidden states
-    for the Hidden Markov Model
+    Function that performs the forward algorithm for a hidden markov model:
 
-    parameters:
-        Observation [numpy.ndarray of shape (T,)]:
-            contains the index of the observation
-            T: number of observations
-        Emission [numpy.ndarray of shape (N, M)]:
-            contains the emission probability of a specific observation
-                given a hidden state
-            N: number of hidden states
-            M: number of all possible observations
-        Transition [2D numpy.ndarray of shape (N, N)]:
-            contains the transition probabilities
-            Transition[i, j] is the probabilitiy of transitioning
-                from the hidden state i to j
-        Initial [numpy.ndarray of shape (N, 1)]:
-            contains the probability of starting in a particular hidden state
+    Arguments:
+     - Observation is a numpy.ndarray of shape (T,) that contains the index
+        of the observation
+        * T is the number of observations
+     - Emission is a numpy.ndarray of shape (N, M) containing the emission
+        probability of a specific observation given a hidden state
+        * Emission[i, j] is the probability of observing j given
+            the hidden state i
+        * N is the number of hidden states
+        * M is the number of all possible observations
+     - Transition is a 2D numpy.ndarray of shape (N, N) containing the
+        transition probabilities
+        * Transition[i, j] is the probability of transitioning from
+            the hidden state i to j
+     - Initial a numpy.ndarray of shape (N, 1) containing the probability of
+        starting in a particular hidden state
 
-    returns:
-        path, P:
-            path [list of length T]:
-                contains the most likely sequence of hidden states
-            P [float]:
-                the probability of obtaining the path sequence
-        or None, None on failure
+    Returns:
+     path, P, or None, None on failure
+        * path is the a list of length T containing the most likely sequence
+            of hidden states
+        * P is the probability of obtaining the path sequence
     """
-    # check that Observation is the correct type and dimension
-    if type(Observation) is not np.ndarray or len(Observation.shape) < 1:
+
+    if not isinstance(Observation, np.ndarray) or len(Observation.shape) != 1:
         return None, None
-    # save T from Observation's shape
+
     T = Observation.shape[0]
-    # check that Emission is the correct type and dimension
-    if type(Emission) is not np.ndarray or len(Emission.shape) != 2:
+    if not isinstance(Emission, np.ndarray) or len(Emission.shape) != 2:
         return None, None
-    # save N and M from Emission's shape
+
     N, M = Emission.shape
-    # check that Transition is the correct type and dimension
-    if type(Transition) is not np.ndarray or len(Transition.shape) != 2:
+    if not isinstance(Transition, np.ndarray) or len(Transition.shape) != 2:
         return None, None
-    # check that Transition's dimensions match N from Emission
-    N_check1, N_check2 = Transition.shape
-    if N_check1 != N or N_check2 != N:
+    if Transition.shape != (N, N):
         return None, None
-    # check that Initial is the correct type and dimension
-    if type(Initial) is not np.ndarray or len(Initial.shape) != 2:
+
+    if not isinstance(Initial, np.ndarray) or len(Initial.shape) != 2:
         return None, None
-    # check that Initial's dimensions match (N, 1)
-    N_check1, one = Initial.shape
-    if N_check1 != N or one != 1:
+    if Initial.shape != (N, 1):
         return None, None
-    return None, None
+
+    if not np.sum(Emission, axis=1).all():
+        return None, None
+    if not np.sum(Transition, axis=1).all():
+        return None, None
+    if not np.sum(Initial) == 1:
+        return None, None
+
+    F = np.empty((N, T))
+    B = np.empty((N, T))
+    F[:, 0] = Initial.T * Emission[:, Observation[0]]
+    B[:, 0] = 0
+
+    for t in range(1, T):
+        prob = (F[:, t - 1] * Transition.T *
+                Emission[np.newaxis, :, Observation[t]].T)
+        F[:, t] = np.amax(prob, 1)
+        B[:, t - 1] = np.argmax(prob, 1)
+
+    path = [0] * T
+    last = np.argmax(F[:, T - 1])
+    path[0] = last
+    idx = 1
+
+    for i in range(T - 2, -1, -1):
+        path[idx] = int(B[int(last), i])
+        last = B[int(last), i]
+        idx += 1
+
+    path.reverse()
+    P = np.amax(F, axis=0)
+    P = np.amin(P)
+
+    return path, P

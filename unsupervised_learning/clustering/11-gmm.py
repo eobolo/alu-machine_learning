@@ -1,35 +1,39 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Defines function that calculates a GMM from a dataset
+Created on Mon Mar 25 08:33:12 2021
+
+@author: Robinson Montes
 """
-
-
 import sklearn.mixture
 
 
 def gmm(X, k):
     """
-    Calculates a GMM from a dataset
+    Function that calculates a GMM from a dataset
 
-    parameters:
-        X [numpy.ndarray of shape (n, d)]:
-            contains the dataset that will be used for K-means clustering
-            n: the number of data points
-            d: the number of dimensions for each data point
-        k [positive int]:
-            contains the number of clusters
+    Arguments:
+     - X is a numpy.ndarray of shape (n, d) containing the dataset
+     - k is the number of clusters
 
-    returns:
-        pi, m, S, clss, bic:
-            pi [numpy.ndarray of shape (k,)]:
-                containing the cluster priors
-            m [numpy.ndarray of shape (k, d)]:
-                containing the centroid means
-            S [numpy.ndarray of shape (k, d, d)]:
-                containing the covariance matrices
-            clss [numpy.ndarray of shape (n,)]:
-                containting the cluster indices for each data point
-            bic [numpy.ndarray of shape (kmax - kmin + 1)]:
-                containting the BIC value for each cluster size tested
+    Returns:
+     pi, m, S, clss, bic
+        - pi is a numpy.ndarray of shape (k,) containing the cluster priors
+        - m is a numpy.ndarray of shape (k, d) containing the centroid means
+        - S is a numpy.ndarray of shape (k, d, d) containing
+            the covariance matrices
+        - clss is a numpy.ndarray of shape (n,) containing the cluster indices
+            for each data point
+        - bic is a numpy.ndarray of shape (kmax - kmin + 1) containing the BIC
+            value for each cluster size tested
     """
-    return None, None, None, None, None
+
+    mixture = sklearn.mixture.GaussianMixture(n_components=k)
+    g = mixture.fit(X)
+    m = g.means_
+    S = g.covariances_
+    pi = g.weights_
+    clss = mixture.predict(X)
+    bic = mixture.bic(X)
+
+    return pi, m, S, clss, bic

@@ -1,56 +1,81 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Defines function that finds the best number of clusters for a GMM using
-the Bayesian Information Criterion (BIC)
+Created on Mon Mar 25 08:33:12 2021
+
+@author: Robinson Montes
 """
-
-
 import numpy as np
-expectation_maximization = __import__('7-EM').expectation_maximization
+expectation_maximization = __import__('8-EM').expectation_maximization
 
 
 def BIC(X, kmin=1, kmax=None, iterations=1000, tol=1e-5, verbose=False):
     """
-    Find the best number of clusters for a GMM using BIC
+    Function that finds the best number of clusters for a GMM using
+    the Bayesian Information Criterion
 
-    parameters:
-        X [numpy.ndarray of shape (n, d)]:
-            contains the dataset
-            n: the number of data points
-            d: the number of dimensions for each data point
-        kmin [positive int]:
-            the minimum number of clusters to check for (inclusive)
-        kmax [positive int]:
-            the maximum number of clusters to check for (inclusive)
-            if None, kmax should be set to maximum number of clusters possible
-        iterations [positive int]:
-            the maximum number of iterations for the algorithm
-        tol [non-negative float]:
-            the tolerance of the log likelihood, used for early stopping
-        verbose [boolean]:
-            determines if you should print information about the algorithm
+    Arguments:
+     - X is a numpy.ndarray of shape (n, d) containing the data set
+     - kmin is a positive integer containing the minimum number of clusters
+        to check for (inclusive)
+     - kmax is a positive integer containing the maximum number of clusters
+        to check for (inclusive)
+     - iterations is a positive integer containing the maximum number of
+        iterations for the EM algorithm
+     - tol is a non-negative float containing the tolerance for
+        the EM algorithm
+     - verbose is a boolean that determines if the EM algorithm should print
+        information to the standard output
 
-    should only use one loop
-
-    returns:
-        best_k, best_result, l, b
-            best_k [positive int]:
-                the best value for k based on its BIC
-            best_result [tuple containing pi, m, S]:
-                pi [numpy.ndarray of shape (k,)]:
-                    contains cluster priors for the best number of clusters
-                m [numpy.ndarray of shape (k, d)]:
-                    contains centroid means for the best number of clusters
-                S [numpy.ndarray of shape (k, d, d)]:
-                    contains covariance matrices for best number of clusters
-            l [numpy.ndarray of shape (kmax - kmin + 1)]:
-                contains the log likelihood for each cluster size tested
-            b [numpy.ndarray of shape (kmax - kmin + 1)]:
-                contains the BIC value for each cluster size tested
-                BIC = p * ln(n) - 2 * 1
-                    p: number of parameters required for the model
-                    n: number of data points used to create the model
-                    l: the log likelihood of the model
-        or None, None, None, None on failure
+    Returns:
+     best_k, best_result, l, b, or None, None, None, None on failure
+        - best_k is the best value for k based on its BIC
+        - best_result is tuple containing pi, m, S
+              * pi is a numpy.ndarray of shape (k,) containing the cluster
+                priors for the best number of clusters
+              * m is a numpy.ndarray of shape (k, d) containing the centroid
+                means for the best number of clusters
+              * S is a numpy.ndarray of shape (k, d, d) containing the
+                covariance matrices for the best number of clusters
+        - l is a numpy.ndarray of shape (kmax - kmin + 1) containing the
+            log likelihood for each cluster size tested
+        - b is a numpy.ndarray of shape (kmax - kmin + 1) containing the BIC
+            value for each cluster size tested
+            Use: BIC = p * ln(n) - 2 * l
+            * p is the number of parameters required for the model
+            * n is the number of data points used to create the model
+            * l is the log likelihood of the model
     """
-    return None, None, None, None
+
+    if not isinstance(X, np.ndarray) or len(X.shape) != 2:
+        return None, None, None, None
+    if type(kmin) != int or kmin <= 0 or kmin >= X.shape[0]:
+        return None, None, None, None
+    if type(kmax) != int or kmax <= 0 or kmax >= X.shape[0]:
+        return None, None, None, None
+    if kmin >= kmax:
+        return None, None, None, None
+    if type(iterations) != int or iterations <= 0:
+        return None, None, None, None
+    if type(tol) != float or tol <= 0:
+        return None, None, None, None
+    if type(verbose) != bool:
+        return None, None, None, None
+
+    n, d = X.shape
+    k_r, result, l_b, b = [], [], [], []
+
+    for k in range(kmin, kmax + 1):
+        pi, m, S, g, like = expectation_maximization(
+            X, k, iterations, tol, verbose)
+        k_r.append(k)
+        result.append((pi, m, S))
+        l_b.append(like)
+        p = (k * d * (d + 1) / 2) + (d * k) + k - 1
+        bic = p * np.log(n) - 2 * like
+        b.append(bic)
+    b = np.array(b)
+    best = np.argmin(b)
+    l_b = np.array(l_b)
+
+    return k_r[best], result[best], l_b[best], b[best]

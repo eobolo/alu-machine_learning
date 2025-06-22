@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar 25 08:33:12 2021
+
+@author: Robinson Montes
 """
 import numpy as np
 expectation_maximization = __import__('8-EM').expectation_maximization
